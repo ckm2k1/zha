@@ -992,7 +992,14 @@ class SinopeDimmerOnLevelConfigurationEntity(NumberConfigurationEntity):
 
 @CONFIG_DIAGNOSTIC_MATCH(
     cluster_handler_names="sinope_manufacturer_specific",
-    models={"DM2500ZB", "DM2500ZB-G2", "DM2550ZB", "DM2550ZB-G2", "SW2500ZB", "SW2500ZB-G2"},
+    models={
+        "DM2500ZB",
+        "DM2500ZB-G2",
+        "DM2550ZB",
+        "DM2550ZB-G2",
+        "SW2500ZB",
+        "SW2500ZB-G2",
+    },
 )
 class SinopeLightLEDOnIntensityConfigurationEntity(NumberConfigurationEntity):
     """Representation of a Sinope switch LED on-level brightness."""
@@ -1007,7 +1014,14 @@ class SinopeLightLEDOnIntensityConfigurationEntity(NumberConfigurationEntity):
 
 @CONFIG_DIAGNOSTIC_MATCH(
     cluster_handler_names="sinope_manufacturer_specific",
-    models={"DM2500ZB", "DM2500ZB-G2", "DM2550ZB", "DM2550ZB-G2", "SW2500ZB", "SW2500ZB-G2"},
+    models={
+        "DM2500ZB",
+        "DM2500ZB-G2",
+        "DM2550ZB",
+        "DM2550ZB-G2",
+        "SW2500ZB",
+        "SW2500ZB-G2",
+    },
 )
 class SinopeLightLEDOffIntensityConfigurationEntity(NumberConfigurationEntity):
     """Representation of a Sinope switch LED off-level brightness."""
