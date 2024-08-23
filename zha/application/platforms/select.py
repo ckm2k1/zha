@@ -850,7 +850,6 @@ class SinopeLightLEDOffColorSelect(ZCLEnumSelectEntity):
     _attribute_name = "off_led_color"
     _attr_translation_key: str = "off_led_color"
     _enum = SinopeLightLedColors
-    _attr_icon: str = "mdi:palette-outline"
 
 
 @CONFIG_DIAGNOSTIC_MATCH(
@@ -871,4 +870,3 @@ class SinopeLightLEDOnColorSelect(ZCLEnumSelectEntity):
     _attribute_name = "on_led_color"
     _attr_translation_key: str = "on_led_color"
     _enum = SinopeLightLedColors
-    _attr_icon: str = "mdi:palette"
