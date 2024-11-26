@@ -850,7 +850,7 @@ class ThermostatLocalTempCalibration(NumberConfigurationEntity):
     _attribute_name = "local_temperature_calibration"
     _attr_translation_key: str = "local_temperature_calibration"
 
-    _attr_mode: NumberMode = NumberMode.SLIDER
+    _attr_mode: NumberMode = NumberMode.BOX
     _attr_native_unit_of_measurement: str = UnitOfTemperature.CELSIUS
 
 
@@ -864,7 +864,7 @@ class SonoffThermostatLocalTempCalibration(ThermostatLocalTempCalibration):
 
     _attr_native_min_value: float = -12.8
     _attr_native_max_value: float = 12.7
-    _attr_native_step: float = 0.2
+    _attr_native_step: float = 0.1
 
 
 @CONFIG_DIAGNOSTIC_MATCH(
