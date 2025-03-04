@@ -61,6 +61,7 @@ class Cover(PlatformEntity):
         "target_lift_position",
         "target_tilt_position",
     }
+    _attr_primary_weight = 10
 
     def __init__(
         self,
@@ -90,9 +91,15 @@ class Cover(PlatformEntity):
         self._target_tilt_position: int | None = None
         self._state: str = STATE_OPEN
         self._determine_initial_state()
-        self._cover_cluster_handler.on_event(
-            CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
-            self.handle_cluster_handler_attribute_updated,
+
+    def on_add(self) -> None:
+        """Run when entity is added."""
+        super().on_add()
+        self._on_remove_callbacks.append(
+            self._cover_cluster_handler.on_event(
+                CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
+                self.handle_cluster_handler_attribute_updated,
+            )
         )
 
     @property
@@ -373,6 +380,7 @@ class Shade(PlatformEntity):
 
     _attr_device_class = CoverDeviceClass.SHADE
     _attr_translation_key: str = "shade"
+    _attr_primary_weight = 10
 
     def __init__(
         self,
@@ -396,18 +404,26 @@ class Shade(PlatformEntity):
             position = max(0, min(255, position))
             position = int(position * 100 / 255)
         self._position: int | None = position
-        self._on_off_cluster_handler.on_event(
-            CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
-            self.handle_cluster_handler_attribute_updated,
-        )
-        self._level_cluster_handler.on_event(
-            CLUSTER_HANDLER_LEVEL_CHANGED, self.handle_cluster_handler_set_level
-        )
         self._attr_supported_features: CoverEntityFeature = (
             CoverEntityFeature.OPEN
             | CoverEntityFeature.CLOSE
             | CoverEntityFeature.STOP
             | CoverEntityFeature.SET_POSITION
+        )
+
+    def on_add(self) -> None:
+        """Run when entity is added."""
+        super().on_add()
+        self._on_remove_callbacks.append(
+            self._on_off_cluster_handler.on_event(
+                CLUSTER_HANDLER_ATTRIBUTE_UPDATED,
+                self.handle_cluster_handler_attribute_updated,
+            )
+        )
+        self._on_remove_callbacks.append(
+            self._level_cluster_handler.on_event(
+                CLUSTER_HANDLER_LEVEL_CHANGED, self.handle_cluster_handler_set_level
+            )
         )
 
     @property
