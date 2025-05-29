@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, ParamSpec, TypeVar, cast
 from zigpy.quirks.v2 import (
     BinarySensorMetadata,
     CustomDeviceV2,
-    EntityType,
     NumberMetadata,
     SwitchMetadata,
     WriteAttributeButtonMetadata,
@@ -45,7 +44,6 @@ from zha.application.platforms import (  # noqa: F401 pylint: disable=unused-imp
     switch,
     update,
 )
-from zha.application.platforms.sensor.const import SensorDeviceClass
 from zha.application.registries import (
     DEVICE_CLASS,
     PLATFORM_ENTITIES,
@@ -108,115 +106,14 @@ GROUP_PLATFORMS = (
 )
 
 QUIRKS_ENTITY_META_TO_ENTITY_CLASS = {
-    (
-        Platform.BUTTON,
-        WriteAttributeButtonMetadata,
-        EntityType.CONFIG,
-    ): button.WriteAttributeButton,
-    (
-        Platform.BUTTON,
-        WriteAttributeButtonMetadata,
-        EntityType.STANDARD,
-    ): button.WriteAttributeButton,
-    (
-        Platform.BUTTON,
-        WriteAttributeButtonMetadata,
-        EntityType.DIAGNOSTIC,
-    ): button.WriteAttributeButton,
-    (
-        Platform.BUTTON,
-        ZCLCommandButtonMetadata,
-        EntityType.CONFIG,
-    ): button.Button,
-    (
-        Platform.BUTTON,
-        ZCLCommandButtonMetadata,
-        EntityType.DIAGNOSTIC,
-    ): button.Button,
-    (
-        Platform.BUTTON,
-        ZCLCommandButtonMetadata,
-        EntityType.STANDARD,
-    ): button.Button,
-    (
-        Platform.BINARY_SENSOR,
-        BinarySensorMetadata,
-        EntityType.CONFIG,
-    ): binary_sensor.BinarySensor,
-    (
-        Platform.BINARY_SENSOR,
-        BinarySensorMetadata,
-        EntityType.DIAGNOSTIC,
-    ): binary_sensor.BinarySensor,
-    (
-        Platform.BINARY_SENSOR,
-        BinarySensorMetadata,
-        EntityType.STANDARD,
-    ): binary_sensor.BinarySensor,
-    (
-        Platform.SENSOR,
-        ZCLEnumMetadata,
-        EntityType.DIAGNOSTIC,
-    ): sensor.EnumSensor,
-    (
-        Platform.SENSOR,
-        ZCLEnumMetadata,
-        EntityType.STANDARD,
-    ): sensor.EnumSensor,
-    (
-        Platform.SENSOR,
-        ZCLSensorMetadata,
-        EntityType.DIAGNOSTIC,
-    ): sensor.Sensor,
-    (
-        Platform.SENSOR,
-        ZCLSensorMetadata,
-        EntityType.STANDARD,
-    ): sensor.Sensor,
-    (
-        Platform.SELECT,
-        ZCLEnumMetadata,
-        EntityType.CONFIG,
-    ): select.ZCLEnumSelectEntity,
-    (
-        Platform.SELECT,
-        ZCLEnumMetadata,
-        EntityType.STANDARD,
-    ): select.ZCLEnumSelectEntity,
-    (
-        Platform.SELECT,
-        ZCLEnumMetadata,
-        EntityType.DIAGNOSTIC,
-    ): select.ZCLEnumSelectEntity,
-    (
-        Platform.NUMBER,
-        NumberMetadata,
-        EntityType.CONFIG,
-    ): number.NumberConfigurationEntity,
-    (
-        Platform.NUMBER,
-        NumberMetadata,
-        EntityType.DIAGNOSTIC,
-    ): number.Number,
-    (
-        Platform.NUMBER,
-        NumberMetadata,
-        EntityType.STANDARD,
-    ): number.Number,
-    (
-        Platform.SWITCH,
-        SwitchMetadata,
-        EntityType.CONFIG,
-    ): switch.ConfigurableAttributeSwitch,
-    (
-        Platform.SWITCH,
-        SwitchMetadata,
-        EntityType.STANDARD,
-    ): switch.ConfigurableAttributeSwitch,
-}
-
-QUIRKS_SENSOR_DEV_CLASS_TO_ENTITY_CLASS = {
-    SensorDeviceClass.TIMESTAMP: sensor.TimestampSensor
+    (Platform.BUTTON, WriteAttributeButtonMetadata): button.WriteAttributeButton,
+    (Platform.BUTTON, ZCLCommandButtonMetadata): button.Button,
+    (Platform.BINARY_SENSOR, BinarySensorMetadata): binary_sensor.BinarySensor,
+    (Platform.SENSOR, ZCLEnumMetadata): sensor.EnumSensor,
+    (Platform.SENSOR, ZCLSensorMetadata): sensor.Sensor,
+    (Platform.SELECT, ZCLEnumMetadata): select.ZCLEnumSelectEntity,
+    (Platform.NUMBER, NumberMetadata): number.NumberConfigurationEntity,
+    (Platform.SWITCH, SwitchMetadata): switch.ConfigurableAttributeSwitch,
 }
 
 
@@ -328,19 +225,22 @@ class DeviceProbe:
                 )
                 continue
 
-            cluster_handler_id = f"{endpoint.id}:0x{cluster.cluster_id:04x}"
-            cluster_handler = (
-                endpoint.all_cluster_handlers.get(cluster_handler_id)
-                if cluster_type is ClusterType.Server
-                else endpoint.client_cluster_handlers.get(cluster_handler_id)
-            )
+            if cluster_type is ClusterType.Server:
+                cluster_handler = endpoint.all_cluster_handlers.get(
+                    f"{endpoint.id}:0x{cluster.cluster_id:04x}"
+                )
+            else:
+                cluster_handler = endpoint.client_cluster_handlers.get(
+                    f"{endpoint.id}:0x{cluster.cluster_id:04x}_client"
+                )
+
             assert cluster_handler
 
             for entity_metadata in entity_metadata_list:
                 platform = Platform(entity_metadata.entity_platform.value)
                 metadata_type = type(entity_metadata)
                 entity_class = QUIRKS_ENTITY_META_TO_ENTITY_CLASS.get(
-                    (platform, metadata_type, entity_metadata.entity_type)
+                    (platform, metadata_type)
                 )
 
                 if entity_class is None:
@@ -355,14 +255,6 @@ class DeviceProbe:
                         },
                     )
                     continue
-
-                if (
-                    entity_class is sensor.Sensor
-                    and entity_metadata.device_class is not None
-                ):
-                    entity_class = QUIRKS_SENSOR_DEV_CLASS_TO_ENTITY_CLASS.get(
-                        entity_metadata.device_class.value, entity_class
-                    )
 
                 # process the entity metadata for ZCL_INIT_ATTRS and REPORT_CONFIG
                 if attr_name := getattr(entity_metadata, "attribute_name", None):
@@ -397,11 +289,11 @@ class DeviceProbe:
                         )
 
                 yield entity_class(
-                    unique_id=endpoint.unique_id,
                     cluster_handlers=[cluster_handler],
                     endpoint=endpoint,
                     device=device,
                     entity_metadata=entity_metadata,
+                    legacy_discovery_unique_id=f"{device.ieee}-{endpoint.id}",
                 )
 
                 _LOGGER.debug(
@@ -479,11 +371,13 @@ class EndpointProbe:
     ) -> Iterator[PlatformEntity]:
         """Process an endpoint on a zigpy device."""
 
-        unique_id = endpoint.unique_id
+        device = endpoint.device
+        legacy_discovery_unique_id = f"{device.ieee}-{endpoint.id}"
 
         platform: str | None = None
-        if unique_id in device_overrides:
-            platform = device_overrides.get(unique_id).type
+        if legacy_discovery_unique_id in device_overrides:
+            platform = device_overrides.get(legacy_discovery_unique_id).type
+
         if platform is None:
             ep_profile_id = endpoint.zigpy_endpoint.profile_id
             ep_device_type = endpoint.zigpy_endpoint.device_type
@@ -493,23 +387,23 @@ class EndpointProbe:
             platform = cast(Platform, platform)
 
             cluster_handlers = endpoint.unclaimed_cluster_handlers()
-            platform_entity_class, claimed = PLATFORM_ENTITIES.get_entity(
+            entity_class, claimed = PLATFORM_ENTITIES.get_entity(
                 platform,
                 endpoint.device.manufacturer,
                 endpoint.device.model,
                 cluster_handlers,
                 endpoint.device.quirk_id,
             )
-            if platform_entity_class is None:
+            if entity_class is None:
                 return
 
             endpoint.claim_cluster_handlers(claimed)
 
-            yield platform_entity_class(
-                unique_id=unique_id,
+            yield entity_class(
                 endpoint=endpoint,
                 device=endpoint.device,
                 cluster_handlers=claimed,
+                legacy_discovery_unique_id=legacy_discovery_unique_id,
             )
 
     def probe_single_cluster(
@@ -521,37 +415,36 @@ class EndpointProbe:
         """Probe specified cluster for specific platform."""
         if platform is None or platform not in PLATFORMS:
             return
-        cluster_handler_list = [cluster_handler]
-        unique_id = f"{endpoint.unique_id}-{cluster_handler.cluster.cluster_id}"
 
         entity_class, claimed = PLATFORM_ENTITIES.get_entity(
             platform,
             endpoint.device.manufacturer,
             endpoint.device.model,
-            cluster_handler_list,
+            [cluster_handler],
             endpoint.device.quirk_id,
         )
         if entity_class is None:
             return
 
         endpoint.claim_cluster_handlers(claimed)
+        device = endpoint.device
 
         yield entity_class(
-            unique_id=unique_id,
             endpoint=endpoint,
             device=endpoint.device,
             cluster_handlers=claimed,
+            legacy_discovery_unique_id=f"{device.ieee}-{endpoint.id}-{cluster_handler.cluster.cluster_id}",
         )
 
     def discover_by_cluster_id(self, endpoint: Endpoint) -> Iterator[PlatformEntity]:
         """Process an endpoint on a zigpy device."""
 
-        items = SINGLE_INPUT_CLUSTER_DEVICE_CLASS.items()
         single_input_clusters = {
             cluster_class: match
-            for cluster_class, match in items
+            for cluster_class, match in SINGLE_INPUT_CLUSTER_DEVICE_CLASS.items()
             if not isinstance(cluster_class, int)
         }
+
         remaining_cluster_handlers = endpoint.unclaimed_cluster_handlers()
         for cluster_handler in remaining_cluster_handlers:
             if cluster_handler.cluster.cluster_id in CLUSTER_HANDLER_ONLY_CLUSTERS:
@@ -613,29 +506,31 @@ class EndpointProbe:
     ) -> Iterator[PlatformEntity]:
         """Process an endpoint on and discover multiple entities."""
 
+        device = endpoint.device
         ep_profile_id = endpoint.zigpy_endpoint.profile_id
         ep_device_type = endpoint.zigpy_endpoint.device_type
         cmpt_by_dev_type = DEVICE_CLASS[ep_profile_id].get(ep_device_type)
 
         if config_diagnostic_entities:
             cluster_handlers = list(endpoint.all_cluster_handlers.values())
-            ota_handler_id = f"{endpoint.id}:0x{Ota.cluster_id:04x}"
+            ota_handler_id = f"{endpoint.id}:0x{Ota.cluster_id:04x}_client"
             if ota_handler_id in endpoint.client_cluster_handlers:
+                # TODO: why is this override here?
                 cluster_handlers.append(
                     endpoint.client_cluster_handlers[ota_handler_id]
                 )
             matches, claimed = PLATFORM_ENTITIES.get_config_diagnostic_entity(
-                endpoint.device.manufacturer,
-                endpoint.device.model,
+                device.manufacturer,
+                device.model,
                 cluster_handlers,
-                endpoint.device.quirk_id,
+                device.quirk_id,
             )
         else:
             matches, claimed = PLATFORM_ENTITIES.get_multi_entity(
-                endpoint.device.manufacturer,
-                endpoint.device.model,
+                device.manufacturer,
+                device.model,
                 endpoint.unclaimed_cluster_handlers(),
-                endpoint.device.quirk_id,
+                device.quirk_id,
             )
 
         endpoint.claim_cluster_handlers(claimed)
@@ -652,19 +547,20 @@ class EndpointProbe:
                     # for well known device types,
                     # like thermostats we'll take only 1st class
                     yield entity_and_handler.entity_class(
-                        unique_id=endpoint.unique_id,
                         endpoint=endpoint,
-                        device=endpoint.device,
+                        device=device,
                         cluster_handlers=entity_and_handler.claimed_cluster_handlers,
+                        legacy_discovery_unique_id=f"{device.ieee}-{endpoint.id}",
                     )
                     break
 
                 first_ch = entity_and_handler.claimed_cluster_handlers[0]
+
                 yield entity_and_handler.entity_class(
-                    unique_id=f"{endpoint.unique_id}-{first_ch.cluster.cluster_id}",
                     endpoint=endpoint,
-                    device=endpoint.device,
+                    device=device,
                     cluster_handlers=entity_and_handler.claimed_cluster_handlers,
+                    legacy_discovery_unique_id=f"{device.ieee}-{endpoint.id}-{first_ch.cluster.cluster_id}",
                 )
 
 

@@ -5,7 +5,10 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Iterable, Sequence
+from collections import defaultdict
+from collections.abc import Iterable
+import copy
+import dataclasses
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
@@ -17,7 +20,7 @@ from zigpy.device import Device as ZigpyDevice
 import zigpy.exceptions
 from zigpy.profiles import PROFILES
 import zigpy.quirks
-from zigpy.quirks.v2 import DeviceAlertMetadata, QuirksV2RegistryEntry
+from zigpy.quirks.v2 import CustomDeviceV2, DeviceAlertMetadata, QuirksV2RegistryEntry
 from zigpy.types import uint1_t, uint8_t, uint16_t
 from zigpy.types.named import EUI64, NWK, ExtendedPanId
 from zigpy.zcl.clusters import Cluster
@@ -61,7 +64,7 @@ from zha.application.const import (
     ZHA_EVENT,
 )
 from zha.application.helpers import convert_to_zcl_values, convert_zcl_value
-from zha.application.platforms import BaseEntity, BaseEntityInfo, PlatformEntity
+from zha.application.platforms import BaseEntityInfo, PlatformEntity
 from zha.event import EventBase
 from zha.exceptions import ZHAException
 from zha.mixins import LogMixin
@@ -73,6 +76,21 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 _CHECKIN_GRACE_PERIODS = 2
+DIAGNOSTICS_JSON_VERSION = 1
+
+
+def get_cluster_attr_data(cluster: Cluster) -> list[dict]:
+    """Return cluster attribute data."""
+    return [
+        {
+            "id": f"0x{attr_def.id:04x}",
+            "name": attr_def.name,
+            "zcl_type": attr_def.zcl_type.name,
+            "value": cluster.get(attr_def.name),
+            "unsupported": (attr_def.id in cluster.unsupported_attributes),
+        }
+        for attr_def in cluster.attributes.values()
+    ]
 
 
 def get_device_automation_triggers(
@@ -235,6 +253,7 @@ class Device(LogMixin, EventBase):
         self._on_network: bool = True
 
         self._platform_entities: dict[tuple[Platform, str], PlatformEntity] = {}
+        self._pending_entities: list[PlatformEntity] = []
         self.semaphore: asyncio.Semaphore = asyncio.Semaphore(3)
 
         self._zdo_handler: ZDOClusterHandler = ZDOClusterHandler(self)
@@ -750,7 +769,7 @@ class Device(LogMixin, EventBase):
             await self._zigpy_device.apply_custom_configuration()
 
         # Try to add entities to claim the cluster handlers
-        self._maybe_add_new_entities()
+        self._discover_new_entities()
 
         await asyncio.gather(
             *(endpoint.async_configure() for endpoint in self._endpoints.values())
@@ -804,7 +823,7 @@ class Device(LogMixin, EventBase):
 
         return False
 
-    def _maybe_add_new_entities(self) -> Sequence[BaseEntity]:
+    def _discover_new_entities(self) -> None:
         if self.is_active_coordinator:
             new_entities = discovery.DEVICE_PROBE.discover_coordinator_device_entities(
                 self
@@ -812,45 +831,19 @@ class Device(LogMixin, EventBase):
         else:
             new_entities = discovery.DEVICE_PROBE.discover_device_entities(self)
 
-        added_entities = []
-
         # Discover all applicable entities
         for entity in new_entities:
-            key = (entity.PLATFORM, entity.unique_id)
-            if key in self.platform_entities:
-                continue
-
             if self._is_entity_removed_by_quirk(entity):
                 continue
 
-            self.platform_entities[key] = entity
             entity.on_add()
-            added_entities.append(entity)
-
-        return added_entities
-
-    async def _maybe_remove_unsupported_entities(self) -> Sequence[BaseEntity]:
-        removed_entities = []
-
-        # Finally, remove inapplicable entities. We iterate backwards to give entities
-        # that have uniqueness constraints (i.e. LQI, RSSI, and Identify) to always pick
-        # the first-created entity, not the last.
-        for key, entity in reversed(list(self.platform_entities.items())):
-            entity.recompute_capabilities()
-
-            if not entity.is_supported():
-                del self.platform_entities[key]
-                await entity.on_remove()
-
-                removed_entities.append(entity)
-
-        return removed_entities
+            self._pending_entities.append(entity)
 
     async def async_initialize(self, from_cache: bool = False) -> None:
         """Initialize cluster handlers."""
         self.debug("started initialization")
 
-        self._maybe_add_new_entities()
+        self._discover_new_entities()
 
         await self._zdo_handler.async_initialize(from_cache)
         self._zdo_handler.debug("'async_initialize' stage succeeded")
@@ -865,8 +858,31 @@ class Device(LogMixin, EventBase):
             except Exception:  # pylint: disable=broad-exception-caught
                 self.debug("Failed to initialize endpoint", exc_info=True)
 
-        # Finally, remove inapplicable entities
-        await self._maybe_remove_unsupported_entities()
+        # Compute the final entities
+        new_entities: dict[tuple[Platform, str], PlatformEntity] = {}
+
+        for entity in self._pending_entities:
+            entity.recompute_capabilities()
+
+            # Ignore unsupported entities
+            if not entity.is_supported() or not entity.is_supported_in_list(
+                new_entities.values()
+            ):
+                await entity.on_remove()
+                continue
+
+            key = (entity.PLATFORM, entity.unique_id)
+
+            # Ignore entities that already exist
+            if key in new_entities:
+                await entity.on_remove()
+                continue
+
+            new_entities[key] = entity
+
+        if new_entities:
+            _LOGGER.debug("Discovered new entities %r", new_entities)
+            self._platform_entities.update(new_entities)
 
         # At this point we can compute a primary entity
         self._compute_primary_entity()
@@ -884,6 +900,9 @@ class Device(LogMixin, EventBase):
 
         for platform_entity in self._platform_entities.values():
             await platform_entity.on_remove()
+
+        for entity in self._pending_entities:
+            await entity.on_remove()
 
     def async_get_clusters(self) -> dict[int, dict[str, dict[int, Cluster]]]:
         """Get all clusters for this device."""
@@ -1220,3 +1239,172 @@ class Device(LogMixin, EventBase):
         for entity in candidates:
             entity.primary = False
             del entity.info_object
+
+    def get_diagnostics_json(self):
+        """Get ZHA device information."""
+
+        info: dict[str, Any] = {}
+        info["version"] = DIAGNOSTICS_JSON_VERSION
+        info["ieee"] = str(self.ieee)
+        info["nwk"] = str(self.nwk)
+        info["manufacturer"] = self.device.manufacturer
+        info["model"] = self.device.model
+        info["friendly_manufacturer"] = self.manufacturer
+        info["friendly_model"] = self.model
+        info["name"] = self.name
+        info["quirk_applied"] = self.quirk_applied
+        info["quirk_class"] = self.quirk_class
+        info["quirk_id"] = self.quirk_id
+        info["manufacturer_code"] = self.manufacturer_code
+        info["power_source"] = self.power_source
+        info["lqi"] = self.lqi
+        info["rssi"] = self.rssi
+        info["last_seen"] = self.device._last_seen.isoformat()
+        info["available"] = self.available
+        info["device_type"] = self.device_type
+        info["active_coordinator"] = self.is_active_coordinator
+
+        node_desc = self.device.node_desc
+        info["node_descriptor"] = {
+            "logical_type": node_desc.logical_type.name,
+            "complex_descriptor_available": bool(
+                node_desc.complex_descriptor_available
+            ),
+            "user_descriptor_available": bool(node_desc.user_descriptor_available),
+            "reserved": node_desc.reserved,
+            "aps_flags": node_desc.aps_flags,
+            "frequency_band": node_desc.frequency_band,
+            "mac_capability_flags": node_desc.mac_capability_flags,
+            "manufacturer_code": node_desc.manufacturer_code,
+            "maximum_buffer_size": node_desc.maximum_buffer_size,
+            "maximum_incoming_transfer_size": node_desc.maximum_incoming_transfer_size,
+            "server_mask": node_desc.server_mask,
+            "maximum_outgoing_transfer_size": node_desc.maximum_outgoing_transfer_size,
+            "descriptor_capability_field": node_desc.descriptor_capability_field,
+        }
+
+        info["endpoints"] = {}
+
+        for endpoint in sorted(
+            self.device.non_zdo_endpoints, key=lambda ep: ep.endpoint_id
+        ):
+            info["endpoints"][endpoint.endpoint_id] = {
+                "profile_id": endpoint.profile_id,
+                "device_type": {
+                    "name": (
+                        (
+                            PROFILES[endpoint.profile_id]
+                            .DeviceType(endpoint.device_type)
+                            .name
+                        )
+                        if endpoint.profile_id in PROFILES
+                        and endpoint.device_type is not None
+                        else UNKNOWN
+                    ),
+                    "id": endpoint.device_type,
+                },
+                "in_clusters": [
+                    {
+                        "cluster_id": f"0x{cluster_id:04x}",
+                        "endpoint_attribute": cluster.ep_attribute,
+                        "attributes": get_cluster_attr_data(cluster),
+                    }
+                    for cluster_id, cluster in sorted(endpoint.in_clusters.items())
+                ],
+                "out_clusters": [
+                    {
+                        "cluster_id": f"0x{cluster_id:04x}",
+                        "endpoint_attribute": cluster.ep_attribute,
+                        "attributes": get_cluster_attr_data(cluster),
+                    }
+                    for cluster_id, cluster in sorted(endpoint.out_clusters.items())
+                ],
+            }
+
+        if isinstance(self.device, CustomDeviceV2):
+            original_signature = copy.deepcopy(self.device.replacement)
+        elif isinstance(self.device, zigpy.quirks.CustomDevice):
+            original_signature = copy.deepcopy(self.device.signature)
+        else:
+            original_signature = None
+
+        # if we have a quirked device we add the original signature to the output and
+        # convert the profile_id, device_type, input_clusters and output_clusters to hex
+        # representation to make it consistent with the rest of the data
+        if original_signature is not None:
+            if "endpoints" in original_signature:
+                for ep in original_signature["endpoints"].values():
+                    if "profile_id" in ep:
+                        ep["profile_id"] = f"0x{ep['profile_id']:04x}"
+
+                    if "device_type" in ep:
+                        ep["device_type"] = f"0x{ep['device_type']:04x}"
+
+                    if "input_clusters" in ep:
+                        ep["input_clusters"] = [
+                            f"0x{c:04x}" for c in ep["input_clusters"]
+                        ]
+
+                    if "output_clusters" in ep:
+                        ep["output_clusters"] = [
+                            f"0x{c:04x}" for c in ep["output_clusters"]
+                        ]
+
+            if "node_desc" in original_signature:
+                original_signature["node_desc"] = original_signature[
+                    "node_desc"
+                ].as_dict()
+
+            info["original_signature"] = original_signature
+
+        info["zha_lib_entities"] = defaultdict(list)
+
+        for (platform, _unique_id), platform_entity in sorted(
+            self.platform_entities.items()
+        ):
+            info_object = dataclasses.asdict(platform_entity.info_object)
+            info_object["cluster_handlers"].sort(key=lambda i: i["unique_id"])
+            info_object["migrate_unique_ids"] = list(info_object["migrate_unique_ids"])
+
+            for cluster_handler_info in info_object["cluster_handlers"]:
+                cluster_info = cluster_handler_info["cluster"]
+
+                if cluster_info is not None:
+                    cluster_info.pop("commands", None)
+
+            info["zha_lib_entities"][platform].append(
+                {
+                    "info_object": info_object,
+                    "state": platform_entity.state,
+                }
+            )
+
+        topology = self.gateway.application_controller.topology
+        info["neighbors"] = [
+            {
+                "device_type": neighbor.device_type.name,
+                "rx_on_when_idle": neighbor.rx_on_when_idle.name,
+                "relationship": neighbor.relationship.name,
+                "extended_pan_id": str(neighbor.extended_pan_id),
+                "ieee": str(neighbor.ieee),
+                "nwk": str(neighbor.nwk),
+                "permit_joining": neighbor.permit_joining.name,
+                "depth": neighbor.depth,
+                "lqi": neighbor.lqi,
+            }
+            for neighbor in topology.neighbors[self.device.ieee]
+        ]
+
+        info["routes"] = [
+            {
+                "dest_nwk": str(route.DstNWK),
+                "route_status": str(route.RouteStatus.name),
+                "memory_constrained": bool(route.MemoryConstrained),
+                "many_to_one": bool(route.ManyToOne),
+                "route_record_required": bool(route.RouteRecordRequired),
+                "next_hop": str(route.NextHop),
+            }
+            for route in topology.routes[self.device.ieee]
+        ]
+
+        return info
