@@ -1,20 +1,20 @@
 {
   "version": 1,
-  "ieee": "ab:cd:ef:12:c8:12:1d:0b",
-  "nwk": "0xB576",
-  "manufacturer": "_TZ3210_j4pdtz9v",
-  "model": "TS0001",
-  "friendly_manufacturer": "_TZ3210_j4pdtz9v",
-  "friendly_model": "TS0001",
-  "name": "_TZ3210_j4pdtz9v TS0001",
+  "ieee": "ab:cd:ef:12:e3:70:52:f5",
+  "nwk": "0x11FE",
+  "manufacturer": "SONOFF",
+  "model": "SNZB-02D",
+  "friendly_manufacturer": "SONOFF",
+  "friendly_model": "SNZB-02D",
+  "name": "SONOFF SNZB-02D",
   "quirk_applied": true,
-  "quirk_class": "zhaquirks.tuya.builder.EnchantedDeviceV2",
+  "quirk_class": "zigpy.quirks.v2.CustomDeviceV2",
   "quirk_id": null,
-  "manufacturer_code": 4417,
+  "manufacturer_code": 4742,
   "power_source": "Battery or Unknown",
-  "lqi": null,
-  "rssi": null,
-  "last_seen": "2025-04-29T19:02:50.365399+00:00",
+  "lqi": 204,
+  "rssi": -60,
+  "last_seen": "2025-07-25T16:59:37.840313+00:00",
   "available": true,
   "device_type": "EndDevice",
   "active_coordinator": false,
@@ -26,19 +26,19 @@
     "aps_flags": 0,
     "frequency_band": 8,
     "mac_capability_flags": 128,
-    "manufacturer_code": 4417,
-    "maximum_buffer_size": 66,
-    "maximum_incoming_transfer_size": 66,
-    "server_mask": 10752,
-    "maximum_outgoing_transfer_size": 66,
+    "manufacturer_code": 4742,
+    "maximum_buffer_size": 82,
+    "maximum_incoming_transfer_size": 255,
+    "server_mask": 11264,
+    "maximum_outgoing_transfer_size": 255,
     "descriptor_capability_field": 0
   },
   "endpoints": {
     "1": {
       "profile_id": 260,
       "device_type": {
-        "name": "ON_OFF_SWITCH",
-        "id": 0
+        "name": "TEMPERATURE_SENSOR",
+        "id": 770
       },
       "in_clusters": [
         {
@@ -46,40 +46,22 @@
           "endpoint_attribute": "basic",
           "attributes": [
             {
-              "id": "0x0001",
-              "name": "app_version",
+              "id": "0x0003",
+              "name": "hw_version",
               "zcl_type": "uint8",
-              "value": 98
+              "value": 0
             },
             {
               "id": "0x0004",
               "name": "manufacturer",
               "zcl_type": "string",
-              "value": "_TZ3210_j4pdtz9v"
+              "value": "SONOFF"
             },
             {
               "id": "0x0005",
               "name": "model",
               "zcl_type": "string",
-              "value": "TS0001"
-            },
-            {
-              "id": "0x0007",
-              "name": "power_source",
-              "zcl_type": "enum8",
-              "value": 3
-            },
-            {
-              "id": "0xfffe",
-              "name": "reporting_status",
-              "zcl_type": "enum8",
-              "value": 0
-            },
-            {
-              "id": "0x0000",
-              "name": "zcl_version",
-              "zcl_type": "uint8",
-              "value": 3
+              "value": "SNZB-02D"
             }
           ]
         },
@@ -88,22 +70,22 @@
           "endpoint_attribute": "power",
           "attributes": [
             {
+              "id": "0x0021",
+              "name": "battery_percentage_remaining",
+              "zcl_type": "uint8",
+              "value": 126
+            },
+            {
               "id": "0x0033",
               "name": "battery_quantity",
               "zcl_type": "uint8",
-              "value": 1
-            },
-            {
-              "id": "0x0034",
-              "name": "battery_rated_voltage",
-              "zcl_type": "uint8",
-              "value": 30
+              "unsupported": true
             },
             {
               "id": "0x0031",
               "name": "battery_size",
               "zcl_type": "enum8",
-              "value": 7
+              "unsupported": true
             },
             {
               "id": "0x0020",
@@ -114,42 +96,65 @@
           ]
         },
         {
-          "cluster_id": "0x0006",
-          "endpoint_attribute": "on_off",
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0020",
+          "endpoint_attribute": "poll_control",
           "attributes": [
             {
               "id": "0x0000",
-              "name": "on_off",
-              "zcl_type": "bool",
-              "value": 1
-            },
-            {
-              "id": "0x4003",
-              "name": "start_up_on_off",
-              "zcl_type": "enum8",
-              "unsupported": true
+              "name": "checkin_interval",
+              "zcl_type": "uint32",
+              "value": 13200
             }
           ]
         },
         {
-          "cluster_id": "0xef00",
-          "endpoint_attribute": "tuya_manufacturer",
+          "cluster_id": "0x0402",
+          "endpoint_attribute": "temperature",
           "attributes": [
             {
-              "id": "0xef65",
-              "name": "mode",
-              "zcl_type": "enum8",
+              "id": "0x0000",
+              "name": "measured_value",
+              "zcl_type": "int16",
+              "value": 2200
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0405",
+          "endpoint_attribute": "humidity",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "measured_value",
+              "zcl_type": "uint16",
+              "value": 5330
+            }
+          ]
+        },
+        {
+          "cluster_id": "0xfc11",
+          "endpoint_attribute": null,
+          "attributes": [
+            {
+              "id": "0x0007",
+              "name": "temperature_unit",
+              "zcl_type": "uint16",
               "value": 1
             }
           ]
+        },
+        {
+          "cluster_id": "0xfc57",
+          "endpoint_attribute": "manufacturer_specific",
+          "attributes": []
         }
       ],
       "out_clusters": [
-        {
-          "cluster_id": "0x000a",
-          "endpoint_attribute": "time",
-          "attributes": []
-        },
         {
           "cluster_id": "0x0019",
           "endpoint_attribute": "ota",
@@ -158,7 +163,7 @@
               "id": "0x0002",
               "name": "current_file_version",
               "zcl_type": "uint32",
-              "value": 98
+              "value": 8960
             }
           ]
         }
@@ -167,16 +172,72 @@
   },
   "original_signature": {},
   "zha_lib_entities": {
+    "button": [
+      {
+        "info_object": {
+          "fallback_name": null,
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-3",
+          "migrate_unique_ids": [],
+          "platform": "button",
+          "class_name": "IdentifyButton",
+          "translation_key": null,
+          "device_class": "identify",
+          "state_class": null,
+          "entity_category": "diagnostic",
+          "entity_registry_enabled_default": true,
+          "enabled": true,
+          "primary": false,
+          "cluster_handlers": [
+            {
+              "class_name": "IdentifyClusterHandler",
+              "generic_id": "cluster_handler_0x0003",
+              "endpoint_id": 1,
+              "cluster": {
+                "id": 3,
+                "name": "Identify",
+                "type": "server"
+              },
+              "id": "1:0x0003",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0x0003",
+              "status": "INITIALIZED",
+              "value_attribute": null
+            }
+          ],
+          "device_ieee": [
+            245,
+            82,
+            112,
+            227,
+            18,
+            239,
+            205,
+            171
+          ],
+          "endpoint_id": 1,
+          "available": true,
+          "group_id": null,
+          "command": "identify",
+          "args": [
+            5
+          ],
+          "kwargs": {}
+        },
+        "state": {
+          "class_name": "IdentifyButton",
+          "available": true
+        }
+      }
+    ],
     "number": [
       {
         "info_object": {
-          "fallback_name": "Down movement",
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-down_movement",
+          "fallback_name": "Comfort humidity max",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-comfort_humidity_max",
           "migrate_unique_ids": [],
           "platform": "number",
           "class_name": "NumberConfigurationEntity",
-          "translation_key": "down_movement",
-          "device_class": null,
+          "translation_key": "comfort_humidity_max",
+          "device_class": "humidity",
           "state_class": null,
           "entity_category": "config",
           "entity_registry_enabled_default": true,
@@ -184,25 +245,25 @@
           "primary": false,
           "cluster_handlers": [
             {
-              "class_name": "TuyaClusterHandler",
-              "generic_id": "cluster_handler_0xef00",
+              "class_name": "SonoffPresenceSenorClusterHandler",
+              "generic_id": "cluster_handler_0xfc11",
               "endpoint_id": 1,
               "cluster": {
-                "id": 61184,
-                "name": "Tuya Manufacturer Specific",
+                "id": 64529,
+                "name": "CustomSonoffCluster",
                 "type": "server"
               },
-              "id": "1:0xef00",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0xef00",
+              "id": "1:0xfc11",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0xfc11",
               "status": "INITIALIZED",
               "value_attribute": null
             }
           ],
           "device_ieee": [
-            11,
-            29,
-            18,
-            200,
+            245,
+            82,
+            112,
+            227,
             18,
             239,
             205,
@@ -212,9 +273,9 @@
           "available": true,
           "group_id": null,
           "mode": "auto",
-          "native_max_value": 100,
-          "native_min_value": 50,
-          "native_step": 1,
+          "native_max_value": 95,
+          "native_min_value": 5,
+          "native_step": 0.1,
           "native_unit_of_measurement": "%"
         },
         "state": {
@@ -225,13 +286,13 @@
       },
       {
         "info_object": {
-          "fallback_name": "Sustain time",
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-sustain_time",
+          "fallback_name": "Comfort humidity min",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-comfort_humidity_min",
           "migrate_unique_ids": [],
           "platform": "number",
           "class_name": "NumberConfigurationEntity",
-          "translation_key": "sustain_time",
-          "device_class": null,
+          "translation_key": "comfort_humidity_min",
+          "device_class": "humidity",
           "state_class": null,
           "entity_category": "config",
           "entity_registry_enabled_default": true,
@@ -239,25 +300,25 @@
           "primary": false,
           "cluster_handlers": [
             {
-              "class_name": "TuyaClusterHandler",
-              "generic_id": "cluster_handler_0xef00",
+              "class_name": "SonoffPresenceSenorClusterHandler",
+              "generic_id": "cluster_handler_0xfc11",
               "endpoint_id": 1,
               "cluster": {
-                "id": 61184,
-                "name": "Tuya Manufacturer Specific",
+                "id": 64529,
+                "name": "CustomSonoffCluster",
                 "type": "server"
               },
-              "id": "1:0xef00",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0xef00",
+              "id": "1:0xfc11",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0xfc11",
               "status": "INITIALIZED",
               "value_attribute": null
             }
           ],
           "device_ieee": [
-            11,
-            29,
-            18,
-            200,
+            245,
+            82,
+            112,
+            227,
             18,
             239,
             205,
@@ -267,10 +328,10 @@
           "available": true,
           "group_id": null,
           "mode": "auto",
-          "native_max_value": 10,
-          "native_min_value": 0,
-          "native_step": 1,
-          "native_unit_of_measurement": "s"
+          "native_max_value": 95,
+          "native_min_value": 5,
+          "native_step": 0.1,
+          "native_unit_of_measurement": "%"
         },
         "state": {
           "class_name": "NumberConfigurationEntity",
@@ -280,13 +341,13 @@
       },
       {
         "info_object": {
-          "fallback_name": "Up movement",
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-up_movement",
+          "fallback_name": "Comfort temperature max",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-comfort_temperature_max",
           "migrate_unique_ids": [],
           "platform": "number",
           "class_name": "NumberConfigurationEntity",
-          "translation_key": "up_movement",
-          "device_class": null,
+          "translation_key": "comfort_temperature_max",
+          "device_class": "temperature",
           "state_class": null,
           "entity_category": "config",
           "entity_registry_enabled_default": true,
@@ -294,25 +355,135 @@
           "primary": false,
           "cluster_handlers": [
             {
-              "class_name": "TuyaClusterHandler",
-              "generic_id": "cluster_handler_0xef00",
+              "class_name": "SonoffPresenceSenorClusterHandler",
+              "generic_id": "cluster_handler_0xfc11",
               "endpoint_id": 1,
               "cluster": {
-                "id": 61184,
-                "name": "Tuya Manufacturer Specific",
+                "id": 64529,
+                "name": "CustomSonoffCluster",
                 "type": "server"
               },
-              "id": "1:0xef00",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0xef00",
+              "id": "1:0xfc11",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0xfc11",
               "status": "INITIALIZED",
               "value_attribute": null
             }
           ],
           "device_ieee": [
-            11,
-            29,
+            245,
+            82,
+            112,
+            227,
             18,
-            200,
+            239,
+            205,
+            171
+          ],
+          "endpoint_id": 1,
+          "available": true,
+          "group_id": null,
+          "mode": "auto",
+          "native_max_value": 60,
+          "native_min_value": -10,
+          "native_step": 0.1,
+          "native_unit_of_measurement": "\u00b0C"
+        },
+        "state": {
+          "class_name": "NumberConfigurationEntity",
+          "available": true,
+          "state": null
+        }
+      },
+      {
+        "info_object": {
+          "fallback_name": "Comfort temperature min",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-comfort_temperature_min",
+          "migrate_unique_ids": [],
+          "platform": "number",
+          "class_name": "NumberConfigurationEntity",
+          "translation_key": "comfort_temperature_min",
+          "device_class": "temperature",
+          "state_class": null,
+          "entity_category": "config",
+          "entity_registry_enabled_default": true,
+          "enabled": true,
+          "primary": false,
+          "cluster_handlers": [
+            {
+              "class_name": "SonoffPresenceSenorClusterHandler",
+              "generic_id": "cluster_handler_0xfc11",
+              "endpoint_id": 1,
+              "cluster": {
+                "id": 64529,
+                "name": "CustomSonoffCluster",
+                "type": "server"
+              },
+              "id": "1:0xfc11",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0xfc11",
+              "status": "INITIALIZED",
+              "value_attribute": null
+            }
+          ],
+          "device_ieee": [
+            245,
+            82,
+            112,
+            227,
+            18,
+            239,
+            205,
+            171
+          ],
+          "endpoint_id": 1,
+          "available": true,
+          "group_id": null,
+          "mode": "auto",
+          "native_max_value": 60,
+          "native_min_value": -10,
+          "native_step": 0.1,
+          "native_unit_of_measurement": "\u00b0C"
+        },
+        "state": {
+          "class_name": "NumberConfigurationEntity",
+          "available": true,
+          "state": null
+        }
+      },
+      {
+        "info_object": {
+          "fallback_name": "Humidity offset",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-humidity_offset",
+          "migrate_unique_ids": [],
+          "platform": "number",
+          "class_name": "NumberConfigurationEntity",
+          "translation_key": "humidity_offset",
+          "device_class": "humidity",
+          "state_class": null,
+          "entity_category": "config",
+          "entity_registry_enabled_default": true,
+          "enabled": true,
+          "primary": false,
+          "cluster_handlers": [
+            {
+              "class_name": "SonoffPresenceSenorClusterHandler",
+              "generic_id": "cluster_handler_0xfc11",
+              "endpoint_id": 1,
+              "cluster": {
+                "id": 64529,
+                "name": "CustomSonoffCluster",
+                "type": "server"
+              },
+              "id": "1:0xfc11",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0xfc11",
+              "status": "INITIALIZED",
+              "value_attribute": null
+            }
+          ],
+          "device_ieee": [
+            245,
+            82,
+            112,
+            227,
             18,
             239,
             205,
@@ -323,9 +494,64 @@
           "group_id": null,
           "mode": "auto",
           "native_max_value": 50,
-          "native_min_value": 0,
-          "native_step": 1,
+          "native_min_value": -50,
+          "native_step": 0.1,
           "native_unit_of_measurement": "%"
+        },
+        "state": {
+          "class_name": "NumberConfigurationEntity",
+          "available": true,
+          "state": null
+        }
+      },
+      {
+        "info_object": {
+          "fallback_name": "Temperature offset",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-temperature_offset",
+          "migrate_unique_ids": [],
+          "platform": "number",
+          "class_name": "NumberConfigurationEntity",
+          "translation_key": "temperature_offset",
+          "device_class": "temperature",
+          "state_class": null,
+          "entity_category": "config",
+          "entity_registry_enabled_default": true,
+          "enabled": true,
+          "primary": false,
+          "cluster_handlers": [
+            {
+              "class_name": "SonoffPresenceSenorClusterHandler",
+              "generic_id": "cluster_handler_0xfc11",
+              "endpoint_id": 1,
+              "cluster": {
+                "id": 64529,
+                "name": "CustomSonoffCluster",
+                "type": "server"
+              },
+              "id": "1:0xfc11",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0xfc11",
+              "status": "INITIALIZED",
+              "value_attribute": null
+            }
+          ],
+          "device_ieee": [
+            245,
+            82,
+            112,
+            227,
+            18,
+            239,
+            205,
+            171
+          ],
+          "endpoint_id": 1,
+          "available": true,
+          "group_id": null,
+          "mode": "auto",
+          "native_max_value": 50,
+          "native_min_value": -50,
+          "native_step": 0.1,
+          "native_unit_of_measurement": "\u00b0C"
         },
         "state": {
           "class_name": "NumberConfigurationEntity",
@@ -337,12 +563,12 @@
     "select": [
       {
         "info_object": {
-          "fallback_name": "Mode",
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-mode",
+          "fallback_name": "Display unit",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-temperature_unit",
           "migrate_unique_ids": [],
           "platform": "select",
           "class_name": "ZCLEnumSelectEntity",
-          "translation_key": "mode",
+          "translation_key": "display_unit",
           "device_class": null,
           "state_class": null,
           "entity_category": "config",
@@ -351,25 +577,25 @@
           "primary": false,
           "cluster_handlers": [
             {
-              "class_name": "TuyaClusterHandler",
-              "generic_id": "cluster_handler_0xef00",
+              "class_name": "SonoffPresenceSenorClusterHandler",
+              "generic_id": "cluster_handler_0xfc11",
               "endpoint_id": 1,
               "cluster": {
-                "id": 61184,
-                "name": "Tuya Manufacturer Specific",
+                "id": 64529,
+                "name": "CustomSonoffCluster",
                 "type": "server"
               },
-              "id": "1:0xef00",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0xef00",
+              "id": "1:0xfc11",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0xfc11",
               "status": "INITIALIZED",
               "value_attribute": null
             }
           ],
           "device_ieee": [
-            11,
-            29,
-            18,
-            200,
+            245,
+            82,
+            112,
+            227,
             18,
             239,
             205,
@@ -378,72 +604,16 @@
           "endpoint_id": 1,
           "available": true,
           "group_id": null,
-          "enum": "FingerBotMode",
+          "enum": "TemperatureUnit",
           "options": [
-            "CLICK",
-            "SWITCH",
-            "PROGRAM"
+            "Celsius",
+            "Fahrenheit"
           ]
         },
         "state": {
           "class_name": "ZCLEnumSelectEntity",
           "available": true,
-          "state": "SWITCH"
-        }
-      },
-      {
-        "info_object": {
-          "fallback_name": "Reverse",
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-reverse",
-          "migrate_unique_ids": [],
-          "platform": "select",
-          "class_name": "ZCLEnumSelectEntity",
-          "translation_key": "reverse",
-          "device_class": null,
-          "state_class": null,
-          "entity_category": "config",
-          "entity_registry_enabled_default": true,
-          "enabled": true,
-          "primary": false,
-          "cluster_handlers": [
-            {
-              "class_name": "TuyaClusterHandler",
-              "generic_id": "cluster_handler_0xef00",
-              "endpoint_id": 1,
-              "cluster": {
-                "id": 61184,
-                "name": "Tuya Manufacturer Specific",
-                "type": "server"
-              },
-              "id": "1:0xef00",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0xef00",
-              "status": "INITIALIZED",
-              "value_attribute": null
-            }
-          ],
-          "device_ieee": [
-            11,
-            29,
-            18,
-            200,
-            18,
-            239,
-            205,
-            171
-          ],
-          "endpoint_id": 1,
-          "available": true,
-          "group_id": null,
-          "enum": "FingerBotReverse",
-          "options": [
-            "UP ON",
-            "UP OFF"
-          ]
-        },
-        "state": {
-          "class_name": "ZCLEnumSelectEntity",
-          "available": true,
-          "state": null
+          "state": "Fahrenheit"
         }
       }
     ],
@@ -451,7 +621,7 @@
       {
         "info_object": {
           "fallback_name": null,
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-0-lqi",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-0-lqi",
           "migrate_unique_ids": [],
           "platform": "sensor",
           "class_name": "LQISensor",
@@ -473,16 +643,16 @@
                 "type": "server"
               },
               "id": "1:0x0000",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0x0000",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0x0000",
               "status": "INITIALIZED",
               "value_attribute": null
             }
           ],
           "device_ieee": [
-            11,
-            29,
-            18,
-            200,
+            245,
+            82,
+            112,
+            227,
             18,
             239,
             205,
@@ -497,13 +667,13 @@
         "state": {
           "class_name": "LQISensor",
           "available": true,
-          "state": null
+          "state": 204
         }
       },
       {
         "info_object": {
           "fallback_name": null,
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-0-rssi",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-0-rssi",
           "migrate_unique_ids": [],
           "platform": "sensor",
           "class_name": "RSSISensor",
@@ -525,16 +695,16 @@
                 "type": "server"
               },
               "id": "1:0x0000",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0x0000",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0x0000",
               "status": "INITIALIZED",
               "value_attribute": null
             }
           ],
           "device_ieee": [
-            11,
-            29,
-            18,
-            200,
+            245,
+            82,
+            112,
+            227,
             18,
             239,
             205,
@@ -549,13 +719,13 @@
         "state": {
           "class_name": "RSSISensor",
           "available": true,
-          "state": null
+          "state": -60
         }
       },
       {
         "info_object": {
           "fallback_name": null,
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-1",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-1",
           "migrate_unique_ids": [],
           "platform": "sensor",
           "class_name": "Battery",
@@ -577,16 +747,16 @@
                 "type": "server"
               },
               "id": "1:0x0001",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0x0001",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0x0001",
               "status": "INITIALIZED",
               "value_attribute": "battery_voltage"
             }
           ],
           "device_ieee": [
-            11,
-            29,
-            18,
-            200,
+            245,
+            82,
+            112,
+            227,
             18,
             239,
             205,
@@ -601,98 +771,44 @@
         "state": {
           "class_name": "Battery",
           "available": true,
-          "state": null,
-          "battery_size": "CR2",
-          "battery_quantity": 1
-        }
-      }
-    ],
-    "switch": [
-      {
-        "info_object": {
-          "fallback_name": null,
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-6",
-          "migrate_unique_ids": [],
-          "platform": "switch",
-          "class_name": "Switch",
-          "translation_key": "switch",
-          "device_class": null,
-          "state_class": null,
-          "entity_category": null,
-          "entity_registry_enabled_default": true,
-          "enabled": true,
-          "primary": true,
-          "cluster_handlers": [
-            {
-              "class_name": "OnOffClusterHandler",
-              "generic_id": "cluster_handler_0x0006",
-              "endpoint_id": 1,
-              "cluster": {
-                "id": 6,
-                "name": "On/Off",
-                "type": "server"
-              },
-              "id": "1:0x0006",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0x0006",
-              "status": "INITIALIZED",
-              "value_attribute": "on_off"
-            }
-          ],
-          "device_ieee": [
-            11,
-            29,
-            18,
-            200,
-            18,
-            239,
-            205,
-            171
-          ],
-          "endpoint_id": 1,
-          "available": true,
-          "group_id": null
-        },
-        "state": {
-          "class_name": "Switch",
-          "state": 1,
-          "available": true
+          "state": 63.0
         }
       },
       {
         "info_object": {
-          "fallback_name": "Touch control",
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-touch_control",
+          "fallback_name": null,
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-1026",
           "migrate_unique_ids": [],
-          "platform": "switch",
-          "class_name": "ConfigurableAttributeSwitch",
-          "translation_key": "touch_control",
-          "device_class": null,
-          "state_class": null,
-          "entity_category": "config",
+          "platform": "sensor",
+          "class_name": "Temperature",
+          "translation_key": null,
+          "device_class": "temperature",
+          "state_class": "measurement",
+          "entity_category": null,
           "entity_registry_enabled_default": true,
           "enabled": true,
           "primary": false,
           "cluster_handlers": [
             {
-              "class_name": "TuyaClusterHandler",
-              "generic_id": "cluster_handler_0xef00",
+              "class_name": "TemperatureMeasurementClusterHandler",
+              "generic_id": "cluster_handler_0x0402",
               "endpoint_id": 1,
               "cluster": {
-                "id": 61184,
-                "name": "Tuya Manufacturer Specific",
+                "id": 1026,
+                "name": "Temperature Measurement",
                 "type": "server"
               },
-              "id": "1:0xef00",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0xef00",
+              "id": "1:0x0402",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0x0402",
               "status": "INITIALIZED",
-              "value_attribute": null
+              "value_attribute": "measured_value"
             }
           ],
           "device_ieee": [
-            11,
-            29,
-            18,
-            200,
+            245,
+            82,
+            112,
+            227,
             18,
             239,
             205,
@@ -701,17 +817,65 @@
           "endpoint_id": 1,
           "available": true,
           "group_id": null,
-          "attribute_name": "touch_control",
-          "invert_attribute_name": null,
-          "force_inverted": false,
-          "off_value": 0,
-          "on_value": 1
+          "suggested_display_precision": null,
+          "unit": "\u00b0C"
         },
         "state": {
-          "class_name": "ConfigurableAttributeSwitch",
+          "class_name": "Temperature",
           "available": true,
-          "state": false,
-          "inverted": false
+          "state": 22.0
+        }
+      },
+      {
+        "info_object": {
+          "fallback_name": null,
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-1029",
+          "migrate_unique_ids": [],
+          "platform": "sensor",
+          "class_name": "Humidity",
+          "translation_key": null,
+          "device_class": "humidity",
+          "state_class": "measurement",
+          "entity_category": null,
+          "entity_registry_enabled_default": true,
+          "enabled": true,
+          "primary": false,
+          "cluster_handlers": [
+            {
+              "class_name": "RelativeHumidityClusterHandler",
+              "generic_id": "cluster_handler_0x0405",
+              "endpoint_id": 1,
+              "cluster": {
+                "id": 1029,
+                "name": "Relative Humidity Measurement",
+                "type": "server"
+              },
+              "id": "1:0x0405",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0x0405",
+              "status": "INITIALIZED",
+              "value_attribute": "measured_value"
+            }
+          ],
+          "device_ieee": [
+            245,
+            82,
+            112,
+            227,
+            18,
+            239,
+            205,
+            171
+          ],
+          "endpoint_id": 1,
+          "available": true,
+          "group_id": null,
+          "suggested_display_precision": null,
+          "unit": "%"
+        },
+        "state": {
+          "class_name": "Humidity",
+          "available": true,
+          "state": 53.3
         }
       }
     ],
@@ -719,7 +883,7 @@
       {
         "info_object": {
           "fallback_name": null,
-          "unique_id": "ab:cd:ef:12:c8:12:1d:0b-1-25-firmware_update",
+          "unique_id": "ab:cd:ef:12:e3:70:52:f5-1-25-firmware_update",
           "migrate_unique_ids": [],
           "platform": "update",
           "class_name": "FirmwareUpdateEntity",
@@ -741,16 +905,16 @@
                 "type": "client"
               },
               "id": "1:0x0019_client",
-              "unique_id": "ab:cd:ef:12:c8:12:1d:0b:1:0x0019_CLIENT",
+              "unique_id": "ab:cd:ef:12:e3:70:52:f5:1:0x0019_CLIENT",
               "status": "INITIALIZED",
               "value_attribute": null
             }
           ],
           "device_ieee": [
-            11,
-            29,
-            18,
-            200,
+            245,
+            82,
+            112,
+            227,
             18,
             239,
             205,
@@ -764,7 +928,7 @@
         "state": {
           "class_name": "FirmwareUpdateEntity",
           "available": true,
-          "installed_version": "0x00000062",
+          "installed_version": "0x00002300",
           "in_progress": false,
           "update_percentage": null,
           "latest_version": null,
